@@ -60,6 +60,7 @@ function rfFilter()
 
     subplot(2,1,2);
     y2 = angle(h);
+    
     % unwrap to eliminate the discontinuity on the phase graph 
     %unwrap(y2);
     semilogx(w1,y2);
@@ -67,4 +68,37 @@ function rfFilter()
     xlabel('Frequency [Hz]');
     ylabel('Phase [Rad]');
     grid;
+    
+    % Export graphs
+    %saveas(gcf,'freq.png');
+    
+    % Importing data from LTSpice
+    data = load('ltspiceexport.txt')
+    
+    % Magnitude, since we exported it as a Real + Img, not as dB/Phase
+    mag_circuit = abs(data(:,2) + i*data(:,3))
+    
+    % Plotting data to compare ltspice simulated and from matlab's
+    figure
+    semilogx(data(:,1),20*log10(mag_circuit),'k',w1,20*log10(abs(h)),'r--','linewidth',2)
+    xlim([1e2 100e5])
+    ylim([-250 10])
+    legend('Circuito','Aproximacao')
+    xlabel('Frequency [Hz]');
+    ylabel('Magnitude [dB]');
+    grid on
+    
+    figure
+    
+    % Plotting the phase
+    % Calculate the phase from the imported data
+    phase = angle(data(:,2) + i*data(:,3));
+    
+    semilogx(data(:,1),phase,'k',w1,y2,'--r','linewidth',2)
+    legend('Circuito','Aproximacao')
+    xlabel('Frequency [Hz]');
+    ylabel('Angle [rad/s]');
+    grid on
+    
+    saveas(gcf,'phase.png');
 end
