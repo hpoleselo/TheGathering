@@ -30,16 +30,16 @@ def calcImpedanciaDeBase():
 
 def calcLinhaTransmissao(ZBase2, ZBase4):
     """ Calcula a impedância e admitância da linha de transmissão. """
-    LT01C1Z1 = ((0.01785+0.19679j)*(300+NA))/ZBase2
-    LT01C2Z1 = ((0.01785+0.19679j)*(300+NA))/ZBase2
-    LT02C1Z1 = ((0.01547+0.17219j)*(350+NA))/ZBase2
-    LT02C2Z1 = ((0.01547+0.17219j)*(350+NA))/ZBase2
-    LT03C1Z1 = ((0.03134+0.33248j)*(200+NA))/ZBase2
+    LT01C1Z = ((0.01785+0.19679j)*(300+NA))/ZBase2
+    LT01C2Z = ((0.01785+0.19679j)*(300+NA))/ZBase2
+    LT02C1Z = ((0.01547+0.17219j)*(350+NA))/ZBase2
+    LT02C2Z = ((0.01547+0.17219j)*(350+NA))/ZBase2
+    LT03C1Z = ((0.03134+0.33248j)*(200+NA))/ZBase2
     LT04C1Z1 = ((0.01252+0.15740j)*(550+NA))/ZBase2
     LT05C1Z1 = ((0.04380+0.53196j)*(30+(NA/10)))/ZBase4
     print("\n")
-    print(f"Impedância da Linha de transmissão: \n{LT01C1Z1}, \n{LT01C2Z1} \n{LT02C1Z1} \n{LT02C2Z1} \n{LT03C1Z1} \n{LT04C1Z1} \n{LT05C1Z1}")
-    return LT01C1Z1, LT01C2Z1, LT02C1Z1, LT02C2Z1, LT03C1Z1, LT04C1Z1, LT05C1Z1
+    print(f"Impedância da Linha de transmissão: \n{LT01C1Z}, \n{LT01C2Z} \n{LT02C1Z1} \n{LT02C2Z1} \n{LT03C1Z1} \n{LT04C1Z1} \n{LT05C1Z1}")
+    return LT01C1Z, LT01C2Z, LT02C1Z1, LT02C2Z1, LT03C1Z1, LT04C1Z1, LT05C1Z1
 
 def calcImpedanciaPorFase():
     # Divindo por 100 para tirar a porçentagem
@@ -63,16 +63,16 @@ def calcImpedanciaPorFase():
     print(f"Impedância por fase:\n{ZP} \b{ZS} \n{ZT}")
     return ZP, ZS, ZT
 
-def construirMatrizAdmitancia(TR02T1Z1, TR03T1Z1, LT01C1Z1, LT01C2Z1, LT02C1Z1, LT02C2Z1, LT03C1Z1, LT04C1Z1, LT05C1Z1, ZEQ1, ZEQ9, ZP, ZS, ZT):
+def construirMatrizAdmitancia(TR02T1Z, TR03T1Z, LT01C1Z, LT01C2Z, LT02C1Z, LT02C2Z, LT03C1Z, LT04C1Z, LT05C1Z, ZEQ1, ZEQ9, ZP, ZS, ZT):
     
     # Preparando valores
-    LT01C1Y1 = 1/LT01C1Z1
-    LT01C2Y1 = 1/LT01C2Z1
-    LT02C1Y1 = 1/LT02C1Z1
-    LT02C2Y1 = 1/LT02C2Z1
-    LT03C1Y1 = 1/LT03C1Z1
-    LT04C1Y1 = 1/LT04C1Z1
-    LT05C1Y1 = 1/LT05C1Z1
+    LT01C1Y = 1/LT01C1Z
+    LT01C2Y = 1/LT01C2Z
+    LT02C1Y = 1/LT02C1Z
+    LT02C2Y = 1/LT02C2Z
+    LT03C1Y = 1/LT03C1Z
+    LT04C1Y = 1/LT04C1Z
+    LT05C1Y = 1/LT05C1Z
 
     YEQ1 = 1/ZEQ1
     YEQ9 = 1/ZEQ9
@@ -80,26 +80,26 @@ def construirMatrizAdmitancia(TR02T1Z1, TR03T1Z1, LT01C1Z1, LT01C2Z1, LT02C1Z1, 
     YS = 1/ZS
     YT = 1/ZT
 
-    TR02T1Y1 = 1/TR02T1Z1
-    TR03T1Y1 = 1/TR03T1Z1
+    TR02T1Y = 1/TR02T1Z
+    TR03T1Y = 1/TR03T1Z
 
     # Construindo elementos da Matriz Y
     Y11 = YEQ1 + YS
-    Y22 = YP + LT01C1Y1 + LT01C2Y1
+    Y22 = YP + LT01C1Y + LT01C2Y
     Y33 = YT
-    Y44 = TR02T1Y1 + LT01C1Y1 + LT02C1Y1 + LT01C2Y1 + LT02C2Y1 + LT04C1Y1
-    Y55 = TR02T1Y1+LT05C1Y1
-    Y66 = LT05C1Y1+TR03T1Y1
+    Y44 = TR02T1Y1 + LT01C1Y + LT02C1Y + LT01C2Y + LT02C2Y + LT04C1Y
+    Y55 = TR02T1Y1 + LT05C1Y
+    Y66 = LT05C1Y + TR03T1Y1
     Y77 = TR03T1Y1
-    Y88 = LT02C1Y1+LT02C2Y1+LT03C1Y1
-    Y99 = LT03C1Y1+LT04C1Y1+YEQ9
-    Y00 = YP+YS+YT
+    Y88 = LT02C1Y + LT02C2Y + LT03C1Y
+    Y99 = LT03C1Y + LT04C1Y + YEQ9
+    Y00 = YP + YS + YT
 
     Y12 = Y13 = Y14 = Y15 = Y16 = Y17 = Y18 = Y19 = 0
     Y10 = -YS
     Y20 = -YP
     Y21 = Y12
-    Y24 = -LT01C1Y1-LT01C2Y1
+    Y24 = -LT01C1Y - LT01C2Y
     Y23 = Y25 = Y26 = Y27 = Y28 = Y29 = 0
     Y31=  Y13
     Y32 = Y23
@@ -110,13 +110,13 @@ def construirMatrizAdmitancia(TR02T1Z1, TR03T1Z1, LT01C1Z1, LT01C2Z1, LT02C1Z1, 
     Y43 = Y34
     Y45 = -TR02T1Y1
     Y46 = Y47 = Y40 = 0
-    Y48 = -LT02C1Y1 - LT02C2Y1
-    Y49 = -LT04C1Y1
+    Y48 = -LT02C1Y - LT02C2Y
+    Y49 = -LT04C1Y
     Y51 = Y15
     Y52 = Y25
     Y53 = Y35
     Y54 = Y45
-    Y56 = -LT05C1Y1
+    Y56 = -LT05C1Y
     Y57 = Y58 = Y59 = Y50 = 0
     Y61 = Y16
     Y62 = Y26
@@ -139,7 +139,7 @@ def construirMatrizAdmitancia(TR02T1Z1, TR03T1Z1, LT01C1Z1, LT01C2Z1, LT02C1Z1, 
     Y85 = Y58
     Y86 = Y68
     Y87 = Y78
-    Y89 = -LT03C1Y1
+    Y89 = -LT03C1Y
     Y80 = 0
     Y91 = Y19
     Y92 = Y29
@@ -171,7 +171,7 @@ def construirMatrizAdmitancia(TR02T1Z1, TR03T1Z1, LT01C1Z1, LT01C2Z1, LT02C1Z1, 
     Y91, Y92, Y93, Y94, Y95, Y96, Y97, Y98, Y99, Y90,
     Y01, Y02, Y03, Y04, Y05, Y06, Y07, Y08, Y09, Y00
     ])
-
+    print(vetor.shape)
     YBarra = vetor.reshape(10,10)
     ZBarra = np.linalg.inv(YBarra)
     return YBarra, ZBarra
@@ -179,30 +179,30 @@ def construirMatrizAdmitancia(TR02T1Z1, TR03T1Z1, LT01C1Z1, LT01C2Z1, LT02C1Z1, 
 def main():
 
     ZBase1, ZBase2, ZBase3, ZBase4 = calcImpedanciaDeBase()
-    LT01C1Z1, LT01C2Z1, LT02C1Z1, LT02C2Z1, LT03C1Z1, LT04C1Z1, LT05C1Z1 = calcLinhaTransmissao(ZBase2, ZBase4)
+    LT01C1Z, LT01C2Z, LT02C1Z1, LT02C2Z1, LT03C1Z1, LT04C1Z1, LT05C1Z1 = calcLinhaTransmissao(ZBase2, ZBase4)
     ZP, ZS, ZT = calcImpedanciaPorFase()
 
     # Potencia 
     Scc3f = (1564.1935+29720.5403j)
 
     # Equivalentes de Rede:
-    ZEQ1 = (0.0048+0.0569j) * (((13.8/VBase1)**2)*(SBase/100))
-    _ZEQ9 = ((abs((1)**2)) *SBase) / (Scc3f)
+    ZEQ1 = (0.0048+0.0569j) * (((13.8/VBase1)**2) * (SBase/100))
+    _ZEQ9 = ((abs((1)**2)) * SBase) / (Scc3f)
     ZEQ9 = _ZEQ9.conjugate()
 
     # Mudança de Base
     # TODO: definir nome correto de tmp1
     tmp1 = (9.15+(NA/100))
     tmp1 = complex(0,tmp1)
-    TR02T1Z1 = (tmp1/100)*(SBase/75)
+    TR02T1Z = (tmp1/100)*(SBase/75)
 
     tmp2 = (8.33+(NA/100))
     tmp2 = complex(0, tmp2)
-    TR03T1Z1 = (tmp2/100)*(SBase/50)
+    TR03T1Z = (tmp2/100)*(SBase/50)
     
     YBarra, ZBarra = construirMatrizAdmitancia(
-        TR02T1Z1, TR03T1Z1,
-         LT01C1Z1, LT01C2Z1, LT02C1Z1, LT02C2Z1, LT03C1Z1, LT04C1Z1, LT05C1Z1,
+        TR02T1Z, TR03T1Z,
+         LT01C1Z, LT01C2Z, LT02C1Z1, LT02C2Z1, LT03C1Z1, LT04C1Z1, LT05C1Z1,
          ZEQ1, ZEQ9, ZP, ZS, ZT
         )
 
