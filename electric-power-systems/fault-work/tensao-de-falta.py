@@ -1,9 +1,7 @@
-import numpy as np
 from copy import deepcopy, copy
-from math import pi, sin, cos
+from math import pi, sin, cos, sqrt
 import pandas as pd
-
-
+import numpy as np
 
 
 def ret2pol(x, y):
@@ -19,7 +17,7 @@ def pol2ret(modulo, theta):
     y = modulo * np.sin(theta)
     return(complex(x,y))
 
-# Funções Auxiliares
+# -- Funções Auxiliares --
 defasamento0Grau = pol2ret(1,0)
 defasamento30Graus = pol2ret(1,30)
 defasamento30GrausNeg = pol2ret(1,-30)
@@ -113,6 +111,7 @@ LT04C1Z = 0.005848452005881117+0.07352606595253099j
 LT05C1Z = 0.007037807183364839+0.08547561436672968j
 TR02T1Z = 0.12280000000000002j
 TR03T1Z = 0.1678j
+
 VBase1 = 13.8
 VBase2 = 345
 VBase3 = 4.16
@@ -125,14 +124,19 @@ ZB2 = 1190.25
 ZB3 = 0.17305600000000002
 ZB4 = 190.44
 ZB5 = 1.9044000000000003
+
 # Importando ZBarra calculado no programa anterior
 ZBarra = np.genfromtxt('zbarra.csv', dtype=complex, delimiter=',')
 
 #endregion
 
-
 # Corrente de Base
-IB1 = SBase/VBase1
+IB1 = SBase/(VBase1*sqrt(3))
+IB2 = SBase/(VBase2*sqrt(3))
+IB3 = SBase/(VBase3*sqrt(3))
+IB4 = SBase/(VBase4*sqrt(3))
+IB5 = SBase/(VBase5*sqrt(3))
+
 
 # Resistencia de falta para as 3 fases
 ZfA = 0.467 # Questao 3 Letra A, ou seja, resistencia na fase A barra 4,6,7
@@ -161,74 +165,139 @@ VpreF[8] = pol2ret(1.0136,-12.2356)
 VpreF[9] = pol2ret(1.0207,-8.8582)
 #endregion
 
+#region -- Calculando as Correntes de Falta e Tensão Pós-Falta
 # Inicializando a corrente de falta
 If = np.zeros(10, dtype=complex)
-# Inicializando as tensões pós-falta, deixamos uma dimensão maior para as correntes circumvizinhas
+# Inicializando as tensões pós-falta, deixamos uma dimensão maior para as correntes Circunvizinhas
 Vpos = np.zeros(100, dtype=complex)
 Vpos = Vpos.reshape(10,10)
 
-# Inicializando as correntes circumvizinhas
+# Inicializando as correntes Circunvizinhas
 Iv = np.zeros(10, dtype=complex)
+
+# Inicializando o vetor das tensões pós-falta para armazenar as tensões em referência a barra 4
 Vpos_ = np.zeros(100, dtype=complex)
 Vpos_ = Vpos_.reshape(10,10)
 
-
-
 matrizDefasagemFinal, VetDefasagem = gerarMatrizesDefasamento()
-
-
 
 # Barras onde ocorrem as faltas
 barra = [4, 6, 7]
 
 for k in barra:
 
-    print(f'\n\n\n######## Falta na Barra {k} ########')
-    # Multiplicando pelo _VPos pois este possui as defasagens corretas
+    print(f'\n\n\n------------ Falta na Barra {k} ------------')
+
+    # Multiplicando pelo VetDefasagem pois este possui as defasagens corretas
     If[k] = (VpreF[k] * VetDefasagem[k]) / (Zf[k] + ZBarra[k-1,k-1]) # k-1 pois eh uma matriz 10x10
-    re_ifk = If[k].real
-    im_ifk = If[k].imag
-    # Expondo em polar pois no Anafas é como sera inputado
-    Ifk_polar_r, Ifk_polar_theta  = ret2pol(re_ifk, im_ifk)
-    # TODO: Dar em PU e em Volts
-    print(f'\nCorrente de Falta na barra {k} é: Módulo(PU): {Ifk_polar_r} Fase(graus): {Ifk_polar_theta}')
+    
     for n in range(1,10):
 
         # Em relação a barra 4, escrever as tensões em relação a si propria
         Vpos[k,n] = (VpreF[n] * VetDefasagem[n]) - (ZBarra[n-1,k-1] * If[k])
-        
-        # Copiando os valores das tensões pós-falta para o cálculo das correntes circumvizinhas (pois)
-        #Vpos_[k,n] = deepcopy(Vpos[k,n])
-        #print("CHECAGEM!!!!!!!!!!!")
-        #print(Vpos_[k,n])
 
-        #Vpos[k,n] = Vpos[k,n] * matrizDefasagemFinal[k,n]
+        # Copiando os valores das tensões pós-falta para o cálculo das correntes Circunvizinhas (pois)
+        Vpos_[k,n] = deepcopy(Vpos[k,n])
+        
+        # Matriz adicionada para colocar as barras em referência a si mesma
+        Vpos[k,n] = Vpos[k,n] * matrizDefasagemFinal[k,n]
+
         re_vpos = Vpos[k,n].real
         im_vpos = Vpos[k,n].imag
         Vpos_polar_r, Vpos_polar_theta = ret2pol(re_vpos, im_vpos)
 
-        # TODO: Dar em PU e em Volts
-        # VBase*
-        print(f'\n Tensão pós-falta na barra {n} é: Módulo(PU): {Vpos_polar_r} Fase(graus): {Vpos_polar_theta}')
-
-
-
+        print(f'\nTensão pós-falta na barra {n} é: Módulo(PU): {Vpos_polar_r} Fase(graus): {Vpos_polar_theta}')
+        
+        if (n in [2,4,8,9]):
+            print("")
+            print(f'Tensão pós-falta na barra {n} é: Módulo(kV): {Vpos_polar_r*VBase2} Fase(graus): {Vpos_polar_theta}')
+        elif(n in [1,7]):
+            print(f'Tensão pós-falta na barra {n} é: Módulo(kV): {Vpos_polar_r*VBase1} Fase(graus): {Vpos_polar_theta}')
+        elif(n in [3]):
+            print(f'Tensão pós-falta na barra {n} é: Módulo(kV): {Vpos_polar_r*VBase3} Fase(graus): {Vpos_polar_theta}')
+        elif(n in [5,6]):
+            print(f'Tensão pós-falta na barra {n} é: Módulo(kV): {Vpos_polar_r*VBase4} Fase(graus): {Vpos_polar_theta}')
+#endregion
 
 #region -- Correntes Circuvizinhas --
-# Correntes adjacentes àos lugares das faltas
-# Calcular todas as ramificacoes de onde a falta se deu, da barra 4
-# para calcular a corrente circunvizinhas: tensao de pos falta entre as barras/impedancia
+Iv_4_2 = (Vpos_[4,2] - Vpos_[4,4] )/ LT01C1Z
+re_iv42 = Iv_4_2.real
+im_iv42 = Iv_4_2.imag
+Iv_42r, Iv_42theta = ret2pol(re_iv42, im_iv42)
 
-# Calculando corrente vizinha entre a barra 4 e 2
-#Iv_4_2 = ( Vpos[4,4]*(np.conj(matrizDefasagemFinal[4,4])) - Vpos[4,2]*(np.conj(matrizDefasagemFinal[4,2])) ) / LT01C1Z
-Iv_4_2 = ( Vpos[4,4] - Vpos[4,2] ) / LT01C1Z
-re_vpos2 = Iv_4_2.real
-im_vpos2 = Iv_4_2.imag
-Iv_r, Iv_theta = ret2pol(re_vpos2, im_vpos2)
+Iv_4_5 = (Vpos_[4,4] - Vpos_[4,5]) / TR02T1Z
+re_iv45 = Iv_4_5.real
+im_iv45 = Iv_4_5.imag
+Iv_45r, Iv_45theta = ret2pol(re_iv45, im_iv45)
 
-# TODO: Dar em PU e em Volts
-# VBase*
-print(f'\n PIKA NO KU {n} é: Módulo(PU): {Iv_r} Fase(graus): {Iv_theta}')
+Iv_4_8 = (Vpos_[4,8] - Vpos_[4,4]) / LT02C1Z
+re_iv48 = Iv_4_8.real
+im_iv48 = Iv_4_8.imag
+Iv_48r, Iv_48theta = ret2pol(re_iv48, im_iv48)
 
-#Iv = (VposF4 - VposF3)/ZLTij
+Iv_4_9 = (Vpos_[4,9] - Vpos_[4,4]) / LT04C1Z
+re_iv49 = Iv_4_9.real
+im_iv49 = Iv_4_9.imag
+Iv_49r, Iv_49theta = ret2pol(re_iv49, im_iv49)
+
+Iv_6_5 = (Vpos_[6,5]- Vpos_[6,6]) / LT05C1Z
+re_iv65 = Iv_6_5.real
+im_iv65 = Iv_6_5.imag
+Iv_65r, Iv_65theta = ret2pol(re_iv65, im_iv65)
+
+Iv_6_7 = (Vpos_[6,6] - Vpos_[6,7]) / TR03T1Z
+re_iv67 = Iv_6_7.real
+im_iv67 = Iv_6_7.imag
+Iv_67r, Iv_67theta = ret2pol(re_iv67, im_iv67)
+
+Iv_7_6 = (Vpos_[7,6] - Vpos_[7,7]) / TR03T1Z
+re_iv76 = Iv_7_6.real
+im_iv76 = Iv_7_6.imag
+Iv_76r, Iv_76theta = ret2pol(re_iv76, im_iv76)
+#endregion
+
+
+#region -- Printando Valores --
+print("\n\n------------ Correntes de Falta ------------")
+
+re_ifk4 = If[4].real
+im_ifk4 = If[4].imag
+Ifk4_polar_r, Ifk4_polar_theta  = ret2pol(re_ifk4, im_ifk4)
+print(f'\nCorrente de Falta na barra 4 é: Módulo(PU): {Ifk4_polar_r} Fase(graus): {Ifk4_polar_theta}')
+print(f'Corrente de Falta na barra 4 é: Módulo(kA): {Ifk4_polar_r*IB2} Fase(graus): {Ifk4_polar_theta}')
+
+re_ifk6 = If[6].real
+im_ifk6 = If[6].imag
+Ifk6_polar_r, Ifk6_polar_theta  = ret2pol(re_ifk6, im_ifk6)
+print(f'\nCorrente de Falta na barra 6 é: Módulo(PU): {Ifk6_polar_r} Fase(graus): {Ifk6_polar_theta}')
+print(f'Corrente de Falta na barra 6 é: Módulo(kA): {Ifk6_polar_r*IB4} Fase(graus): {Ifk6_polar_theta}')
+
+re_ifk7 = If[7].real
+im_ifk7 = If[7].imag
+Ifk7_polar_r, Ifk7_polar_theta  = ret2pol(re_ifk7, im_ifk7)
+print(f'\nCorrente de Falta na barra 7 é: Módulo(PU): {Ifk7_polar_r} Fase(graus): {Ifk7_polar_theta}')
+print(f'Corrente de Falta na barra 7 é: Módulo(kA): {Ifk7_polar_r*IB5} Fase(graus): {Ifk7_polar_theta}')
+
+print("\n\n------------ Correntes Circunvizinhas ------------")
+
+print(f'\nCorrente Circunvizinha Iv_4_2 é: Módulo(PU): {Iv_42r} Fase(graus): {Iv_42theta}')
+print(f'Corrente Circunvizinha Iv_4_2 é: Módulo(kA): {Iv_42r*IB2} Fase(graus): {Iv_42theta}')
+
+print(f'\nCorrente Circunvizinha Iv_4_5 é: Módulo(PU): {Iv_45r} Fase(graus): {Iv_45theta}')
+print(f'Corrente Circunvizinha Iv_4_5 é: Módulo(kA): {Iv_45r*IB2} Fase(graus): {Iv_45theta}')
+
+print(f'\nCorrente Circunvizinha Iv_4_8 é: Módulo(PU): {Iv_48r} Fase(graus): {Iv_48theta}')
+print(f'Corrente Circunvizinha Iv_4_8 é: Módulo(kA): {Iv_48r*IB2} Fase(graus): {Iv_48theta}')
+
+print(f'\nCorrente Circunvizinha Iv_4_9 é: Módulo(PU): {Iv_49r} Fase(graus): {Iv_49theta}')
+print(f'Corrente Circunvizinha Iv_4_9 é: Módulo(kA): {Iv_49r*IB2} Fase(graus): {Iv_49theta}')
+
+print(f'\nCorrente Circunvizinha Iv_6_5 é: Módulo(PU): {Iv_65r} Fase(graus): {Iv_65theta}')
+print(f'Corrente Circunvizinha Iv_6_5 é: Módulo(kA): {Iv_65r*IB4} Fase(graus): {Iv_65theta}')
+
+print(f'\nCorrente Circunvizinha Iv_6_7 é: Módulo(PU): {Iv_67r} Fase(graus): {Iv_67theta}')
+print(f'Corrente Circunvizinha Iv_6_7 é: Módulo(kA): {Iv_67r*IB4} Fase(graus): {Iv_67theta}')
+
+print(f'\nCorrente Circunvizinha Iv_7_6 é: Módulo(PU): {Iv_76r} Fase(graus): {Iv_76theta}')
+print(f'Corrente Circunvizinha Iv_7_6 é: Módulo(kA): {Iv_76r*IB5} Fase(graus): {Iv_76theta}')
 #endregion
