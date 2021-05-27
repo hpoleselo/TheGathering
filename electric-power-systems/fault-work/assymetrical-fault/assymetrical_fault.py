@@ -3,11 +3,14 @@ from math import pi, sin, cos, sqrt
 import pandas as pd
 import numpy as np
 
-def ret2pol(x, y):
+compararComAnafas = True
+
+def ret2pol(z):
+    x = z.real
+    y = z.imag
     modulo = np.sqrt(x**2 + y**2)
-    theta = np.arctan2(y, x)
-    theta = theta*(180/pi)
-    return (modulo, theta)
+    theta = (180/pi)*(np.arctan2(y, x))
+    return(modulo, theta)
 
 def pol2ret(modulo, theta):
     # Converter para radianos, já que Python usa rad internamente
@@ -32,6 +35,7 @@ ZBase5 = ((VBase5**2)/SBase)
 
 
 ZBarra_positivo = np.genfromtxt('zbarra.csv', dtype=complex, delimiter=',')
+ZBarra_neg = deepcopy(ZBarra_positivo)
 
 #region -- Criando vetor para guardar os valores de VpreF, dados na tabela no roteiro do trabalho --
 VpreF = np.zeros(10, dtype=complex)
@@ -98,10 +102,6 @@ A_df = pd.DataFrame(A)
 #print(A_df)
 #endregion
 
-# Passo 1: Calcular ZBarra +, - e 0
-
-# Zbarra_neg = Zbarra_positivo
-#ZBarra_neg = copy.deepcopy(ZBarra_positivo)
 
 # Potencia 
 Scc3f = (1564.1935+29720.5403j)
@@ -131,7 +131,6 @@ YP = 1/ZP
 YS = 1/ZS
 YT = 1/ZT
 
-print(f'YS: {YS}')
 tmp1 = (9.15+(NA/100))
 tmp1 = complex(0,tmp1)
 TR02T1Z = (tmp1/100)*(SBase/75)
@@ -160,6 +159,7 @@ LT03C1Z_0 = ((0.30550+1.21921j)*(200+NA))/ZBase2
 LT04C1Z_0 = ((0.09522+0.59865j)*(550+NA))/ZBase2
 LT05C1Z_0 = ((0.48880+1.76855j)*(30+(NA/10)))/ZBase4
 
+
 LT01C1Y_0 = 1/LT01C1Z_0
 LT01C2Y_0 = 1/LT01C2Z_0
 LT02C1Y_0 = 1/LT02C1Z_0
@@ -170,7 +170,6 @@ LT05C1Y_0 = 1/LT05C1Z_0
 
 
 Z0 = pol2ret(0.19252,87.84669)
-print(Z0/100)
 Y0 = 1/Z0
 
 # Impedância Mutua para seq. 0
@@ -182,6 +181,7 @@ ZAT01A1 = pol2ret(tmp,90)
 
 # Pot de base no valor que ZAT101A1 foi calculado
 ZAT01A1 = (ZAT01A1*SBase)/40
+
 YAT01A1 = 1/ZAT01A1
 
 # Pot. trifásica na barra 9 
@@ -250,21 +250,15 @@ YBarra_0 = np.array([Y11_0, Y12_0, Y13_0, Y14_0, Y15_0, Y16_0, Y17_0, Y18_0, Y19
 
 YBarra_0 = YBarra_0.reshape(10,10)
 ZBarra_0 = np.linalg.inv(YBarra_0)
+Ybdf = pd.DataFrame(YBarra_0)
 Zbdf = pd.DataFrame(ZBarra_0)
 print("Zé Barra Sequência de Toma Toma 0:\n")
+print(Ybdf)
 print(Zbdf)
 
-#ZBarra_zero = 
 
 
-
-
-
-
-
-
-
-
+If = np.zeros(10, dtype=complex)
 # barraOndeOcorreuAFalta = [4, 5, 2]
 barraOndeOcorreuAFalta = [4]
 
@@ -273,11 +267,25 @@ for k in barraOndeOcorreuAFalta:
 
     print(f'\n\n\n------------ Falta na Barra {k} ------------')
 
-    # Multiplicando pelo VetDefasagem pois este possui as defasagens corretas
-    #If[k] = (VpreF[k] * VetDefasagem[k]) / (Zf[k] + ZBarra[k-1,k-1]) # k-1 pois eh uma matriz 10x10
+    If[k] = (3*VpreF[k]) / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1])
     
 
-
+if compararComAnafas:
+    print("Valores para comparar com o Anafas")
+    print(LT01C1Z_0*100)
+    print(LT01C2Z_0*100)
+    print(LT02C1Z_0*100)
+    print(LT02C2Z_0*100)
+    print(LT03C1Z_0*100)
+    print(LT04C1Z_0*100)
+    print(LT05C1Z_0*100)
+    print(f"Zg0: {Zg0*100}")
+    print(f'Z0: {Z0*100}')
+    print(f'ZP: {ZP*100}')
+    print(f'ZS: {ZS*100}')
+    print(f'ZT: {ZT*100}')
+    print(f'ZAT01A1: {ZAT01A1*100}')
+    print(f'Corrente de Falta na barra 4: {ret2pol(If[4])}')
 
 
 
