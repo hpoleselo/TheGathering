@@ -3,7 +3,6 @@ from math import pi, sin, cos, sqrt
 import pandas as pd
 import numpy as np
 
-compararComAnafas = True
 
 def ret2pol(z):
     x = z.real
@@ -37,7 +36,7 @@ ZBase5 = ((VBase5**2)/SBase)
 ZBarra_positivo = np.genfromtxt('zbarra.csv', dtype=complex, delimiter=',')
 ZBarra_neg = deepcopy(ZBarra_positivo)
 ZBarraP = pd.DataFrame(ZBarra_positivo)
-print(ZBarraP*100)
+#print(ZBarraP*100)
 
 #region -- Criando vetor para guardar os valores de VpreF, dados na tabela no roteiro do trabalho --
 VpreF = np.zeros(10, dtype=complex)
@@ -98,11 +97,11 @@ indices3 = [4, 8]
 A[indices] = 1
 A[indices2] = a
 A[indices3] = a**2
-
 A = A.reshape(3,3)
 A_df = pd.DataFrame(A)
-#print(A_df)
+print(A_df)
 #endregion
+
 
 
 # Potencia 
@@ -255,23 +254,109 @@ ZBarra_0 = np.linalg.inv(YBarra_0)
 Ybdf = pd.DataFrame(YBarra_0)
 Zbdf = pd.DataFrame(ZBarra_0)
 print("Zé Barra Sequência de Toma Toma 0:\n")
-print(Ybdf)
+print(Zbdf)
 print(100*Zbdf)
 
-
-
+# Queremos individualmente para calcular as tensões pos falta
 If = np.zeros(10, dtype=complex)
+
+# Resultante (soma dos 3)
+If_3 = np.zeros(10, dtype=complex)
+
 # barraOndeOcorreuAFalta = [4, 5, 2]
+defasagem30GrausPos = pol2ret(1,30)
+defasagem30GrausNeg = pol2ret(1,-30)
+defasagem0Grau = pol2ret(1,0)
+
+defasagemAnafas = [defasagem0Grau, defasagem30GrausPos]
+
 barraOndeOcorreuAFalta = [4]
+
+Vpos_positiva = np.zeros(10, dtype=complex)
+Vpos_neg = np.zeros(10, dtype=complex)
+Vpos_0 = np.zeros(10, dtype=complex)
 
 # Calcular as tensoes de pós-falta em sequencia +, - e 0 em TODAS as barras
 for k in barraOndeOcorreuAFalta:
+    # Colocando em termos do Anafas
+    # Quando for falta na barra 5, a defasagem é de 0 em relaçã o a barra 5 (da 1 pra 5)
+    # Quando for na barra 4, 30 graus positivos
 
     print(f'\n\n\n------------ Falta na Barra {k} ------------')
 
-    If[k] = (3*VpreF[k]) / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1] + 3*Zf[4])
-    
-"""    
+    If[k] = (VpreF[k])*defasagem30GrausPos / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1] + 3*Zf[4])
+    If_3[k] = (3*VpreF[k])*defasagem30GrausPos / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1] + 3*Zf[4])
+
+    # TODO: Calculamos a tensão de fase, A B e C apenas na barra de falta, proximo passo é calcular as tensões de pós falta nas outras Barras!
+    # TODO: Depois as correntes circunvizinhas
+    # Tensao pos falta na barra de falta (4)
+    Vpos_positiva[4] = VpreF[4]*defasagem30GrausPos - ZBarra_positivo[3,3]*If[4]
+    Vpos_neg[4] = -ZBarra_neg[3,3]*If[4]
+    Vpos_0[4] = -ZBarra_0[3,3]*If[4]
+    print(f'Tensão Pos Falta Positiva: {ret2pol(Vpos_positiva)}')
+    print(f'Tensão Pos Falta Negativa: {ret2pol(Vpos_neg)}')
+    print(f'Tensão Pos Falta Zero: {ret2pol(Vpos_0)}')
+
+
+    vetSeq = np.array([[Vpos_0, Vpos_positiva, Vpos_neg]])
+    vetSeq = vetSeq.transpose()
+    # Vph: tensões nas fases A, B e C
+    Vph = np.dot(A,vetSeq)
+
+    for k in range(3):
+        print("vetSeq")
+        print(f'{ret2pol(vetSeq[k])}')
+        print("V_A")
+        print(f'{ret2pol(Vph[k])}')
+
+    # Falta barra 4, porem calculando as tensoes de fase A, B e C na barra 5
+    Vpos_positiva[5] = (VpreF[5]*defasagem30GrausPos - ZBarra_positivo[3,4]*If[4])*defasagem30GrausNeg # def 30 neg devido ao trafo
+    Vpos_neg[5] = (-ZBarra_neg[3,4]*If[4])*defasagem30GrausPos # def 30 pos devido ao trafo
+    Vpos_0[5] = -ZBarra_0[3,4]*If[4]
+
+    vetSeq = np.array([[Vpos_0, Vpos_positiva, Vpos_neg]])
+    vetSeq = vetSeq.transpose()
+    # Vph: tensões nas fases A, B e C
+    Vph = np.dot(A,vetSeq)
+
+    print("\n\nBarra 5")
+    for k in range(3):
+        print("vetSeq")
+        print(f'{ret2pol(vetSeq[k])}')
+        print("V_A")
+        print(f'{ret2pol(Vph[k])}')
+    # Matriz de fontesquier (matriz A)
+
+    Ic_45_pos = (Vpos_positiva[4] - Vpos_positiva[5])/ZBarra_positivo[3,4]
+    Ic_45_neg = (Vpos_neg[4] - Vpos_neg[5])/ZBarra_neg[3,4]
+    Ic_45_0 = (Vpos_0[4] - Vpos_0[5])/ZBarra_0[3,4]
+
+    print("BORA FAMIGLIA")
+    print(f'{ret2pol(Ic_45_pos)}')
+    print(f'{ret2pol(Ic_45_neg)}')
+    print(f'{ret2pol(Ic_45_0)}')
+
+    # Falta barra 4, porem calculando as tensoes de fase A, B e C na barra 8
+    Vpos_positiva = VpreF[8]*defasagem30GrausPos - ZBarra_positivo[3,7]*If[4]
+    Vpos_neg = -ZBarra_neg[3,7]*If[4]
+    Vpos_0 = -ZBarra_0[3,7]*If[4]
+
+    vetSeq = np.array([[Vpos_0, Vpos_positiva, Vpos_neg]])
+    vetSeq = vetSeq.transpose()
+    # Vph: tensões nas fases A, B e C
+    Vph = np.dot(A,vetSeq)
+
+    print("\n\nBarra 8")
+    for k in range(3):
+        print("vetSeq")
+        print(f'{ret2pol(vetSeq[k])}')
+        print("V_A")
+        print(f'{ret2pol(Vph[k])}')
+    # Matriz de fontesquier (matriz A)
+
+
+compararComAnafas = False
+
 if compararComAnafas:
     print("Valores para comparar com o Anafas")
     print(f"LT01C1Z: {LT01C1Z_0*100}")
@@ -286,7 +371,7 @@ if compararComAnafas:
     print(f'ZP: {ZP*100}')
     print(f'ZS: {ZS*100}')
     print(f'ZT: {ZT*100}')
-    print(f'ZAT01A1: {ZAT01A1*100}')"""
+    print(f'ZAT01A1: {ZAT01A1*100}')
 
 
 print(f'Corrente de Falta na barra 4: {ret2pol(If[4])}')
