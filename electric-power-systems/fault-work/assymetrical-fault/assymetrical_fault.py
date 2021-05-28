@@ -36,6 +36,8 @@ ZBase5 = ((VBase5**2)/SBase)
 
 ZBarra_positivo = np.genfromtxt('zbarra.csv', dtype=complex, delimiter=',')
 ZBarra_neg = deepcopy(ZBarra_positivo)
+ZBarraP = pd.DataFrame(ZBarra_positivo)
+print(ZBarraP*100)
 
 #region -- Criando vetor para guardar os valores de VpreF, dados na tabela no roteiro do trabalho --
 VpreF = np.zeros(10, dtype=complex)
@@ -131,7 +133,7 @@ YP = 1/ZP
 YS = 1/ZS
 YT = 1/ZT
 
-tmp1 = (9.15+(NA/100))
+tmp1 = 9.15+(NA/100)
 tmp1 = complex(0,tmp1)
 TR02T1Z = (tmp1/100)*(SBase/75)
 TR02T1Y = 1/TR02T1Z
@@ -169,14 +171,14 @@ LT04C1Y_0 = 1/LT04C1Z_0
 LT05C1Y_0 = 1/LT05C1Z_0
 
 
-Z0 = pol2ret(0.19252,87.84669)
+Z0 = pol2ret(0.19242,87.84669)
 Y0 = 1/Z0
 
 # Impedância Mutua para seq. 0
 Z0m = ((0.05213 + 0.58234j) * (300+NA))/ZBase2
 
 # Impedância do Trafo. de Aterramento
-tmp = 6.385+NA/100
+tmp = (6.385+NA/100)/100
 ZAT01A1 = pol2ret(tmp,90)
 
 # Pot de base no valor que ZAT101A1 foi calculado
@@ -188,24 +190,23 @@ YAT01A1 = 1/ZAT01A1
 
 # Pot monofásica em retangular (MVA)
 Scc1f = pol2ret(16942.0622, 86.1346)
-Scc1f = Scc1f/100 # pu
 
 # Equivalente de rede na barra 9
-Zg9 = 3*SBase/Scc1f
-
+Zg9t = 3*SBase/Scc1f
+Zg9 = Zg9t.conjugate()
 Zg0 = Zg9 - 2*ZEQ9
 Yg0 = 1/Zg0
 
 
 Z24_0_tmp = (LT01C1Z_0 + Z0m)/2
-Y24_0 = 1/Z24_0_tmp
+Y24_0 = -1/Z24_0_tmp
 
 # Não entra o enrolamento do trafo pois está em Delta 
 # Y de seq. zero
 Y11_0 = Y0 + YS    # é Ys pois está em em Yg, em seq. 0 se mantém
-Y22_0 = Y24_0 + YAT01A1
+Y22_0 = -Y24_0 + YAT01A1
 Y33_0 = YT
-Y44_0 = Y24_0 + LT02C1Y_0 + LT02C2Y_0 + LT04C1Y_0
+Y44_0 = -Y24_0 + LT02C1Y_0 + LT02C2Y_0 + LT04C1Y_0
 Y55_0 = TR02T1Y + LT05C1Y_0
 Y66_0 = LT05C1Y_0
 Y77_0 = TR03T1Y
@@ -225,14 +226,15 @@ Y81_0 = Y82_0 = Y83_0 = Y85_0 = Y86_0 = Y87_0 = Y80_0 = 0
 Y91_0 = Y92_0 = Y93_0 = Y95_0 = Y96_0 = Y97_0 = Y90_0 = 0
 
 # Elementos da não diagonal principal precisam do negativo
-Y42_0 = -Y24_0
+Y42_0 = Y24_0
 Y48_0 = Y84_0 = -LT02C1Y_0 - LT02C2Y_0
-Y49_0 = Y94_0 = -LT04C1Y_0 - LT03C1Y_0 - Yg0
+Y49_0 = Y94_0 = -LT04C1Y_0 
 Y56_0 = Y65_0 = -LT05C1Y_0
 Y89_0 = Y98_0 = -LT03C1Y_0
 
 # Barra Virtual
-Y02_0 = Y04_0 = Y05_0 = Y06_0 =  Y07_0 = Y08_0 =  Y09_0 = Y00_0 = 0
+Y00_0 = YP + YS + YT
+Y02_0 = Y04_0 = Y05_0 = Y06_0 =  Y07_0 = Y08_0 =  Y09_0 = 0
 Y01_0 = Y10_0
 Y03_0 = Y30_0
 
@@ -254,7 +256,7 @@ Ybdf = pd.DataFrame(YBarra_0)
 Zbdf = pd.DataFrame(ZBarra_0)
 print("Zé Barra Sequência de Toma Toma 0:\n")
 print(Ybdf)
-print(Zbdf)
+print(100*Zbdf)
 
 
 
@@ -267,12 +269,12 @@ for k in barraOndeOcorreuAFalta:
 
     print(f'\n\n\n------------ Falta na Barra {k} ------------')
 
-    If[k] = (3*VpreF[k]) / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1])
+    If[k] = (3*VpreF[k]) / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1] + 3*Zf[4])
     
-
+"""    
 if compararComAnafas:
     print("Valores para comparar com o Anafas")
-    print(LT01C1Z_0*100)
+    print(f"LT01C1Z: {LT01C1Z_0*100}")
     print(LT01C2Z_0*100)
     print(LT02C1Z_0*100)
     print(LT02C2Z_0*100)
@@ -284,8 +286,7 @@ if compararComAnafas:
     print(f'ZP: {ZP*100}')
     print(f'ZS: {ZS*100}')
     print(f'ZT: {ZT*100}')
-    print(f'ZAT01A1: {ZAT01A1*100}')
-    print(f'Corrente de Falta na barra 4: {ret2pol(If[4])}')
+    print(f'ZAT01A1: {ZAT01A1*100}')"""
 
 
-
+print(f'Corrente de Falta na barra 4: {ret2pol(If[4])}')
