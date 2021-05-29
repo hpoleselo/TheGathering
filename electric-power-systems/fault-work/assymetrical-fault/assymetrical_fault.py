@@ -41,11 +41,15 @@ ZBase3 = ((VBase3**2)/SBase)
 ZBase4 = ((VBase4**2)/SBase)
 ZBase5 = ((VBase5**2)/SBase)
 
-
+# Importando ZBarra e YBarra de sequência positiva do código da parte 1 do trabalho
 ZBarra_positivo = np.genfromtxt('zbarra.csv', dtype=complex, delimiter=',')
+YBarra_positivo = np.genfromtxt('ybarra.csv', dtype=complex, delimiter=',')
+ybarra = pd.DataFrame(YBarra_positivo)
+# Já que o ZBarra de seq. positivo é igual o de seq. negativa
 ZBarra_neg = deepcopy(ZBarra_positivo)
+YBarra_neg = deepcopy(YBarra_positivo)
 ZBarraP = pd.DataFrame(ZBarra_positivo)
-#print(ZBarraP*100)
+
 
 #region -- Criando vetor para guardar os valores de VpreF, dados na tabela no roteiro do trabalho --
 VpreF = np.zeros(10, dtype=complex)
@@ -197,6 +201,7 @@ YAT01A1 = 1/ZAT01A1
 # Pot monofásica em retangular (MVA)
 Scc1f = pol2ret(16942.0622, 86.1346)
 
+#region ---- Montagem matriz YBarra Seq 0 -----
 # Equivalente de rede na barra 9
 Zg9t = 3*SBase/Scc1f
 Zg9 = Zg9t.conjugate()
@@ -256,13 +261,64 @@ YBarra_0 = np.array([Y11_0, Y12_0, Y13_0, Y14_0, Y15_0, Y16_0, Y17_0, Y18_0, Y19
         Y01_0, Y02_0, Y03_0, Y04_0, Y05_0, Y06_0, Y07_0, Y08_0, Y09_0, Y00_0
         ])
 
+# Modificando a matriz YBarra de seq 0 para calcular as correntes circunvizinhas
+# Já que no Anafas a corrente se divide nas barras, portanto precisamos tirar
+# Não entra o enrolamento do trafo pois está em Delta 
+Z24_0_tmp = LT01C1Z_0 + Z0m
+Y24_0 = -1/Z24_0_tmp
+Y11_0 = Y0 + YS    # é Ys pois está em em Yg, em seq. 0 se mantém
+Y22_0 = -Y24_0 + YAT01A1
+Y33_0 = YT
+Y44_0 = -Y24_0 + LT02C1Y_0 + LT02C2Y_0 + LT04C1Y_0
+Y55_0 = TR02T1Y + LT05C1Y_0
+Y66_0 = LT05C1Y_0
+Y77_0 = TR03T1Y
+Y88_0 = LT02C1Y_0 + LT02C2Y_0 + LT03C1Y_0
+Y99_0 = LT03C1Y_0 + LT04C1Y_0 + Yg0
+Y10_0 = -YS
+Y30_0 = -YT
+
+Y12_0 = Y13_0 = Y14_0 = Y15_0 = Y16_0 = Y17_0 = Y18_0 = Y19_0 = 0
+Y21_0 = Y23_0 = Y25_0 = Y26_0 = Y27_0 = Y28_0 = Y29_0 = Y20_0 = 0
+Y31_0 = Y32_0 = Y34_0 = Y35_0 = Y36_0 = Y37_0 = Y38_0 = Y39_0 = 0
+Y41_0 = Y43_0 = Y45_0 = Y46_0 = Y47_0 = Y40_0 = 0
+Y51_0 = Y52_0 = Y53_0 = Y54_0 = Y57_0 = Y58_0 = Y59_0 = Y50_0 = 0
+Y61_0 = Y62_0 = Y63_0 = Y64_0 = Y67_0 = Y68_0 = Y69_0 = Y60_0 = 0
+Y71_0 = Y72_0 = Y73_0 = Y74_0 = Y75_0 = Y76_0 = Y78_0 = Y79_0 = Y70_0 = 0
+Y81_0 = Y82_0 = Y83_0 = Y85_0 = Y86_0 = Y87_0 = Y80_0 = 0
+Y91_0 = Y92_0 = Y93_0 = Y95_0 = Y96_0 = Y97_0 = Y90_0 = 0
+
+# Elementos da não diagonal principal precisam do negativo
+Y42_0 = Y24_0
+Y48_0 = Y84_0 = -LT02C2Y_0
+Y49_0 = Y94_0 = -LT04C1Y_0 
+Y56_0 = Y65_0 = -LT05C1Y_0
+Y89_0 = Y98_0 = -LT03C1Y_0
+
+# Barra Virtual
+Y00_0 = YP + YS + YT
+Y02_0 = Y04_0 = Y05_0 = Y06_0 =  Y07_0 = Y08_0 =  Y09_0 = 0
+Y01_0 = Y10_0
+Y03_0 = Y30_0
+
+YBarra_0_mod = np.array([Y11_0, Y12_0, Y13_0, Y14_0, Y15_0, Y16_0, Y17_0, Y18_0, Y19_0, Y10_0,
+        Y21_0, Y22_0, Y23_0, Y24_0, Y25_0, Y26_0, Y27_0, Y28_0, Y29_0, Y20_0,
+        Y31_0, Y32_0, Y33_0, Y34_0, Y35_0, Y36_0, Y37_0, Y38_0, Y39_0, Y30_0,
+        Y41_0, Y42_0, Y43_0, Y44_0, Y45_0, Y46_0, Y47_0, Y48_0, Y49_0, Y40_0,
+        Y51_0, Y52_0, Y53_0, Y54_0, Y55_0, Y56_0, Y57_0, Y58_0, Y59_0, Y50_0,
+        Y61_0, Y62_0, Y63_0, Y64_0, Y65_0, Y66_0, Y67_0, Y68_0, Y69_0, Y60_0,
+        Y71_0, Y72_0, Y73_0, Y74_0, Y75_0, Y76_0, Y77_0, Y78_0, Y79_0, Y70_0,
+        Y81_0, Y82_0, Y83_0, Y84_0, Y85_0, Y86_0, Y87_0, Y88_0, Y89_0, Y80_0,
+        Y91_0, Y92_0, Y93_0, Y94_0, Y95_0, Y96_0, Y97_0, Y98_0, Y99_0, Y90_0,
+        Y01_0, Y02_0, Y03_0, Y04_0, Y05_0, Y06_0, Y07_0, Y08_0, Y09_0, Y00_0
+        ])
+
+YBarra_0_mod = YBarra_0_mod.reshape(10,10)
 YBarra_0 = YBarra_0.reshape(10,10)
 ZBarra_0 = np.linalg.inv(YBarra_0)
 Ybdf = pd.DataFrame(YBarra_0)
 Zbdf = pd.DataFrame(ZBarra_0)
-print("Zé Barra Sequência de Toma Toma 0:\n")
-print(Zbdf)
-print(100*Zbdf)
+#endregion
 
 # Queremos individualmente para calcular as tensões pos falta
 If = np.zeros(10, dtype=complex)
@@ -302,6 +358,21 @@ Vdefasagem_oposto[9] = defasagem0Grau
 barraOndeOcorreuAFalta = [4]
 
 
+tensoesDeFaseABC = []
+
+# Vetor que guarda as tensões de fase A, B e C, usado para exportar e colocar no relatório depois.
+Vetf = np.zeros(30, dtype=tuple)
+Vetf = Vetf.reshape(3,10)
+
+# Correntes circunvizinhas de seq. positiva, neg e 0
+Ic_positivo = np.zeros(10, dtype=complex)
+Ic_neg = np.zeros(10, dtype=complex)
+Ic_0 = np.zeros(10, dtype=complex)
+
+# Matriz para guardar as correntes circunvizinhas de fase A, B e C
+Ivetpf = np.zeros(30, dtype=tuple)
+Ivetpf = Ivetpf.reshape(3,10)
+
 # Calcular as tensoes de pós-falta em sequencia +, - e 0 em TODAS as barras
 for k in barraOndeOcorreuAFalta:
     # Colocando em termos do Anafas
@@ -329,21 +400,48 @@ for k in barraOndeOcorreuAFalta:
         print(f'Tensão Pos Falta Negativa: {ret2pol(Vpos_neg[n])}')
         print(f'Tensão Pos Falta Zero: {ret2pol(Vpos_0[n])}')
 
+        # Guardando valores para dar output nas tensoes de barra de fase A, B e C
+        vetSeq = np.array([[Vpos_0[n], Vpos_positiva[n], Vpos_neg[n]]])
+        vetSeq = vetSeq.transpose()
 
-    vetSeq = np.array([[Vpos_0, Vpos_positiva, Vpos_neg]])
-    vetSeq = vetSeq.transpose()
-    # Vph: tensões nas fases A, B e C
-    Vph = np.dot(A,vetSeq)
+        # Vph: tensões nas fases A, B e C
+        Vph = np.dot(A,vetSeq)
+        # Loop auxiliar para guardar os valores de forma correta na matriz das tensões de fase A, B e C
+        for m in range(0,3):
+            Vetf[m,n] = ret2pol(Vph[m])
+    
+    # Números das barras adjacentes para calcular as correntes circunvizinhas; nested de acordo com a barra de falta
+    for h in [2,5,8,9]:
+        #print(f"\nVpos {h} {ret2pol(Vpos_positiva[h])}")
+        #print(f"Vpos {k} {ret2pol(Vpos_positiva[k])}")
+        #print(f"ZBarra {k} {ret2pol(Vpos_positiva[k])}")
 
+        Ic_positivo[h] = (Vpos_positiva[h]*Vdefasagem_oposto[h] - Vpos_positiva[k])*(-YBarra_positivo[h-1,k-1])
+        Ic_neg[h] = (Vpos_neg[h]*Vdefasagem[h]-Vpos_neg[k])*(-YBarra_neg[h-1,k-1])
+        Ic_0[h] = (Vpos_0[h]-Vpos_0[k])*(-YBarra_0_mod[h-1,k-1])
+        print(f'\nCorrente Circunvizinha Positiva: {k}-{h}:\n{ret2pol(Ic_positivo[h])}')
+        print(f'\nCorrente Circunvizinha Negativa: {k}-{h}:\n{ret2pol(Ic_neg[h])}')
+        print(f'\nCorrente Circunvizinha 0: {k}-{h}:\n{ret2pol(Ic_0[h])}')
+        ISeq = np.array([[Ic_0[h], Ic_positivo[h], Ic_neg[h]]])
+        ISeq = ISeq.transpose()
+        Iph = np.dot(A,ISeq)
+        # Loop auxiliar para guardar os valores de forma correta na matriz das correntes circunvizinhas de fase A, B e C
+        for g in range(0,3):
+            Ivetpf[g,h] = ret2pol(Iph[g])
 
-    Ic_45_pos = (Vpos_positiva[4] - Vpos_positiva[5])/ZBarra_positivo[3,4]
-    Ic_45_neg = (Vpos_neg[4] - Vpos_neg[5])/ZBarra_neg[3,4]
-    Ic_45_0 = (Vpos_0[4] - Vpos_0[5])/ZBarra_0[3,4]
+    matCorrenteCircunvizinhasABC = pd.DataFrame(Ivetpf)
+    matTensaoPosFaltaABC = pd.DataFrame(Vetf)
+    print(matCorrenteCircunvizinhasABC)
 
-    print("BORA FAMIGLIA")
-    print(f'{ret2pol(Ic_45_pos)}')
-    print(f'{ret2pol(Ic_45_neg)}')
-    print(f'{ret2pol(Ic_45_0)}')
+    #Ic_45_pos = (-Vpos_positiva[4] + Vpos_positiva[5])/ZBarra_positivo[3,4]
+    #Ic_45_neg = (Vpos_neg[4] - Vpos_neg[5])/ZBarra_neg[3,4]
+    #Ic_45_0 = (Vpos_0[4] - Vpos_0[5])/ZBarra_0[3,4]
+
+    #print("BORA FAMIGLIA")
+    #print(f'{ret2pol(Ic_45_pos)}')
+    #print(f'{ret2pol(Ic_45_neg)}')
+    #print(f'{ret2pol(Ic_45_0)}')
+
 
 
 compararComAnafas = False
@@ -363,4 +461,10 @@ if compararComAnafas:
     print(f'ZS: {ZS*100}')
     print(f'ZT: {ZT*100}')
     print(f'ZAT01A1: {ZAT01A1*100}')
+    print("ZBarra de Sequência 0:\n")
+    print(Zbdf)
+    print(100*Zbdf)
+    print("Tensoes de Fase ABC:")
+    for column in matTensaoPosFaltaABC:
+        print(matTensaoPosFaltaABC[column])
 
