@@ -35,11 +35,11 @@ def calcLinhaTransmissao(ZBase2, ZBase4):
     LT02C1Z = ((0.01547+0.17219j)*(350+NA))/ZBase2
     LT02C2Z = ((0.01547+0.17219j)*(350+NA))/ZBase2
     LT03C1Z = ((0.03134+0.33248j)*(200+NA))/ZBase2
-    LT04C1Z1 = ((0.01252+0.15740j)*(550+NA))/ZBase2
-    LT05C1Z1 = ((0.04380+0.53196j)*(30+(NA/10)))/ZBase4
+    LT04C1Z = ((0.01252+0.15740j)*(550+NA))/ZBase2
+    LT05C1Z = ((0.04380+0.53196j)*(30+(NA/10)))/ZBase4
     print("\n")
-    print(f"Impedância da Linha de transmissão: \n{LT01C1Z}, \n{LT01C2Z} \n{LT02C1Z1} \n{LT02C2Z1} \n{LT03C1Z1} \n{LT04C1Z1} \n{LT05C1Z1}")
-    return LT01C1Z, LT01C2Z, LT02C1Z1, LT02C2Z1, LT03C1Z1, LT04C1Z1, LT05C1Z1
+    print(f"Impedância da Linha de transmissão: \n{LT01C1Z}, \n{LT01C2Z} \n{LT02C1Z} \n{LT02C2Z} \n{LT03C1Z} \n{LT04C1Z} \n{LT05C1Z}")
+    return LT01C1Z, LT01C2Z, LT02C1Z, LT02C2Z, LT03C1Z, LT04C1Z, LT05C1Z
 
 def calcImpedanciaPorFase():
     # Divindo por 100 para tirar a porçentagem
@@ -87,10 +87,10 @@ def construirMatrizAdmitancia(TR02T1Z, TR03T1Z, LT01C1Z, LT01C2Z, LT02C1Z, LT02C
     Y11 = YEQ1 + YS
     Y22 = YP + LT01C1Y + LT01C2Y
     Y33 = YT
-    Y44 = TR02T1Y1 + LT01C1Y + LT02C1Y + LT01C2Y + LT02C2Y + LT04C1Y
-    Y55 = TR02T1Y1 + LT05C1Y
-    Y66 = LT05C1Y + TR03T1Y1
-    Y77 = TR03T1Y1
+    Y44 = TR02T1Y + LT01C1Y + LT02C1Y + LT01C2Y + LT02C2Y + LT04C1Y
+    Y55 = TR02T1Y + LT05C1Y
+    Y66 = LT05C1Y + TR03T1Y
+    Y77 = TR03T1Y
     Y88 = LT02C1Y + LT02C2Y + LT03C1Y
     Y99 = LT03C1Y + LT04C1Y + YEQ9
     Y00 = YP + YS + YT
@@ -108,7 +108,7 @@ def construirMatrizAdmitancia(TR02T1Z, TR03T1Z, LT01C1Z, LT01C2Z, LT02C1Z, LT02C
     Y41 = Y14
     Y42 = Y24
     Y43 = Y34
-    Y45 = -TR02T1Y1
+    Y45 = -TR02T1Y
     Y46 = Y47 = Y40 = 0
     Y48 = -LT02C1Y - LT02C2Y
     Y49 = -LT04C1Y
@@ -123,7 +123,7 @@ def construirMatrizAdmitancia(TR02T1Z, TR03T1Z, LT01C1Z, LT01C2Z, LT02C1Z, LT02C
     Y63 = Y36
     Y64 = Y46
     Y65 = Y56
-    Y67 = -TR03T1Y1
+    Y67 = -TR03T1Y
     Y68 = Y69 = Y60 = 0
     Y71 = Y17
     Y72 = Y27
