@@ -209,9 +209,11 @@ def main():
     # Convertendo para DataFrame para exportar como CSV
     df_zbarra = pd.DataFrame(ZBarra)
     df_ybarra = pd.DataFrame(YBarra)
+    #print(df_ybarra)
+    #print(df_zbarra)
     # TODO: Exportar sem index
-    #df_zbarra.to_csv(r'zbarra.csv')
-    df_ybarra.to_csv(r'ybarra.csv')
+    df_zbarra.to_csv(r'zbarra.csv', index=False)
+    df_ybarra.to_csv(r'ybarra.csv', index=False)
 
 main()
 
