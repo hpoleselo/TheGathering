@@ -19,6 +19,15 @@ def pol2ret(modulo, theta):
     return(complex(x,y))
 
 
+# Defasagens para auxiliar na leitura do código
+defasagem0Grau = pol2ret(1,0)
+defasagem30GrausPos = pol2ret(1,30)
+defasagem30GrausNeg = pol2ret(1,-30)
+defasagem60GrausPos = pol2ret(1,60)
+defasagem60GrausNeg = pol2ret(1,-60)
+defasagem120GrausPos = pol2ret(1,120)
+defasagem120GrausNeg = pol2ret(1,-120)
+
 NA = 6
 VBase1 = 13.8
 VBase2 = 345
@@ -101,8 +110,6 @@ A = A.reshape(3,3)
 A_df = pd.DataFrame(A)
 print(A_df)
 #endregion
-
-
 
 # Potencia 
 Scc3f = (1564.1935+29720.5403j)
@@ -263,18 +270,37 @@ If = np.zeros(10, dtype=complex)
 # Resultante (soma dos 3)
 If_3 = np.zeros(10, dtype=complex)
 
-# barraOndeOcorreuAFalta = [4, 5, 2]
-defasagem30GrausPos = pol2ret(1,30)
-defasagem30GrausNeg = pol2ret(1,-30)
-defasagem0Grau = pol2ret(1,0)
-
-defasagemAnafas = [defasagem0Grau, defasagem30GrausPos]
-
-barraOndeOcorreuAFalta = [4]
-
 Vpos_positiva = np.zeros(10, dtype=complex)
 Vpos_neg = np.zeros(10, dtype=complex)
 Vpos_0 = np.zeros(10, dtype=complex)
+
+# Vetor que contém as defasagens para as tensões de pós-falta, colocando as barras em relação a barra de falta, neste caso, 4.
+Vdefasagem = np.zeros(10, dtype=complex)
+Vdefasagem[1] = defasagem30GrausNeg
+Vdefasagem[2] = defasagem0Grau
+Vdefasagem[3] = defasagem30GrausNeg
+Vdefasagem[4] = defasagem0Grau
+Vdefasagem[5] = defasagem30GrausNeg
+Vdefasagem[6] = defasagem30GrausNeg
+Vdefasagem[7] = defasagem120GrausNeg
+Vdefasagem[8] = defasagem0Grau
+Vdefasagem[9] = defasagem0Grau
+
+Vdefasagem_oposto = np.zeros(10, dtype=complex)
+Vdefasagem_oposto[1] = defasagem30GrausPos
+Vdefasagem_oposto[2] = defasagem0Grau
+Vdefasagem_oposto[3] = defasagem30GrausPos
+Vdefasagem_oposto[4] = defasagem0Grau
+Vdefasagem_oposto[5] = defasagem30GrausPos
+Vdefasagem_oposto[6] = defasagem30GrausPos
+Vdefasagem_oposto[7] = defasagem120GrausPos
+Vdefasagem_oposto[8] = defasagem0Grau
+Vdefasagem_oposto[9] = defasagem0Grau
+
+
+# barraOndeOcorreuAFalta = [4, 5, 2]
+barraOndeOcorreuAFalta = [4]
+
 
 # Calcular as tensoes de pós-falta em sequencia +, - e 0 em TODAS as barras
 for k in barraOndeOcorreuAFalta:
@@ -284,48 +310,31 @@ for k in barraOndeOcorreuAFalta:
 
     print(f'\n\n\n------------ Falta na Barra {k} ------------')
 
-    If[k] = (VpreF[k])*defasagem30GrausPos / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1] + 3*Zf[4])
-    If_3[k] = (3*VpreF[k])*defasagem30GrausPos / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1] + 3*Zf[4])
+    If[k] = (VpreF[k])*defasagem30GrausPos / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1] + 3*Zf[k])
+    If_3[k] = (3*VpreF[k])*defasagem30GrausPos / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1] + 3*Zf[k])
 
-    # TODO: Calculamos a tensão de fase, A B e C apenas na barra de falta, proximo passo é calcular as tensões de pós falta nas outras Barras!
-    # TODO: Depois as correntes circunvizinhas
-    # Tensao pos falta na barra de falta (4)
-    Vpos_positiva[4] = VpreF[4]*defasagem30GrausPos - ZBarra_positivo[3,3]*If[4]
-    Vpos_neg[4] = -ZBarra_neg[3,3]*If[4]
-    Vpos_0[4] = -ZBarra_0[3,3]*If[4]
-    print(f'Tensão Pos Falta Positiva: {ret2pol(Vpos_positiva)}')
-    print(f'Tensão Pos Falta Negativa: {ret2pol(Vpos_neg)}')
-    print(f'Tensão Pos Falta Zero: {ret2pol(Vpos_0)}')
+    print(f'Corrente de Falta na barra {k}: {ret2pol(If[k])}')
+    # 9 Barras
+    for n in range(1,10):
 
+        print(f'Z{n}, {k-1}: {ZBarra_0[n-1,k-1]}')
+        # Tensao pos falta na barra de falta (4)
+        # n-1 pois a matriz Zbarra possui dimensão 10 devido ao barra virtual
+        Vpos_positiva[n] = (VpreF[n]*defasagem30GrausPos - ZBarra_positivo[n-1,k-1]*If[k])*Vdefasagem[n]
+        Vpos_neg[n] = -(ZBarra_neg[n-1,k-1]*If[k])*Vdefasagem_oposto[n]
+        Vpos_0[n] = -ZBarra_0[n-1,k-1]*If[k]
 
-    vetSeq = np.array([[Vpos_0, Vpos_positiva, Vpos_neg]])
-    vetSeq = vetSeq.transpose()
-    # Vph: tensões nas fases A, B e C
-    Vph = np.dot(A,vetSeq)
+        print(f"\n\n---- Tensão pós falta na barra {n} ----")
+        print(f'Tensão Pos Falta Positiva: {ret2pol(Vpos_positiva[n])}')
+        print(f'Tensão Pos Falta Negativa: {ret2pol(Vpos_neg[n])}')
+        print(f'Tensão Pos Falta Zero: {ret2pol(Vpos_0[n])}')
 
-    for k in range(3):
-        print("vetSeq")
-        print(f'{ret2pol(vetSeq[k])}')
-        print("V_A")
-        print(f'{ret2pol(Vph[k])}')
-
-    # Falta barra 4, porem calculando as tensoes de fase A, B e C na barra 5
-    Vpos_positiva[5] = (VpreF[5]*defasagem30GrausPos - ZBarra_positivo[3,4]*If[4])*defasagem30GrausNeg # def 30 neg devido ao trafo
-    Vpos_neg[5] = (-ZBarra_neg[3,4]*If[4])*defasagem30GrausPos # def 30 pos devido ao trafo
-    Vpos_0[5] = -ZBarra_0[3,4]*If[4]
 
     vetSeq = np.array([[Vpos_0, Vpos_positiva, Vpos_neg]])
     vetSeq = vetSeq.transpose()
     # Vph: tensões nas fases A, B e C
     Vph = np.dot(A,vetSeq)
 
-    print("\n\nBarra 5")
-    for k in range(3):
-        print("vetSeq")
-        print(f'{ret2pol(vetSeq[k])}')
-        print("V_A")
-        print(f'{ret2pol(Vph[k])}')
-    # Matriz de fontesquier (matriz A)
 
     Ic_45_pos = (Vpos_positiva[4] - Vpos_positiva[5])/ZBarra_positivo[3,4]
     Ic_45_neg = (Vpos_neg[4] - Vpos_neg[5])/ZBarra_neg[3,4]
@@ -335,24 +344,6 @@ for k in barraOndeOcorreuAFalta:
     print(f'{ret2pol(Ic_45_pos)}')
     print(f'{ret2pol(Ic_45_neg)}')
     print(f'{ret2pol(Ic_45_0)}')
-
-    # Falta barra 4, porem calculando as tensoes de fase A, B e C na barra 8
-    Vpos_positiva = VpreF[8]*defasagem30GrausPos - ZBarra_positivo[3,7]*If[4]
-    Vpos_neg = -ZBarra_neg[3,7]*If[4]
-    Vpos_0 = -ZBarra_0[3,7]*If[4]
-
-    vetSeq = np.array([[Vpos_0, Vpos_positiva, Vpos_neg]])
-    vetSeq = vetSeq.transpose()
-    # Vph: tensões nas fases A, B e C
-    Vph = np.dot(A,vetSeq)
-
-    print("\n\nBarra 8")
-    for k in range(3):
-        print("vetSeq")
-        print(f'{ret2pol(vetSeq[k])}')
-        print("V_A")
-        print(f'{ret2pol(Vph[k])}')
-    # Matriz de fontesquier (matriz A)
 
 
 compararComAnafas = False
@@ -373,5 +364,3 @@ if compararComAnafas:
     print(f'ZT: {ZT*100}')
     print(f'ZAT01A1: {ZAT01A1*100}')
 
-
-print(f'Corrente de Falta na barra 4: {ret2pol(If[4])}')
