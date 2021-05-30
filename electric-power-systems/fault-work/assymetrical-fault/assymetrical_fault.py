@@ -23,8 +23,8 @@ def pol2ret(modulo, theta):
 defasagem0Grau = pol2ret(1,0)
 defasagem30GrausPos = pol2ret(1,30)
 defasagem30GrausNeg = pol2ret(1,-30)
-defasagem60GrausPos = pol2ret(1,60)
-defasagem60GrausNeg = pol2ret(1,-60)
+defasagem90GrausPos = pol2ret(1,90)
+defasagem90GrausNeg = pol2ret(1,-90)
 defasagem120GrausPos = pol2ret(1,120)
 defasagem120GrausNeg = pol2ret(1,-120)
 
@@ -64,38 +64,18 @@ VpreF[8] = pol2ret(1.0136,-12.2356)
 VpreF[9] = pol2ret(1.0207,-8.8582)
 #endregion
 
-"""
-    Calcular as tensoes de pós-falta em sequencia +, - e 0 em TODAS as barras
-    Sabendo que as faltas ocorrem:
-    - a) Falta Monofásica na barra 4 (SE - 345kV),          ZfA = 1.673
-    - b) Falta Bifásica na barra 5 (SE - 138kV),            ZfB = 2.033
-    - c) Falta Bifásica À TERRA na barra 2 (SE - 345kV),    ZfC = 0.328
-
-    Va_0_pos : tensão de pós-falta em sequencia 0
-    Va_1_pos : tensão de pós-falta em sequencia +
-    Va_2_pos : tensão de pós-falta em sequencia -
-
-    Va = Va_2_pos + Va_1_pos + Va_0_pos
-"""
-
 ZfA = 1.673
 ZfB = 2.033
 ZfC = 0.328
 
-ZB1 = 1.9044000000000003
-ZB2 = 1190.25
-ZB3 = 0.17305600000000002
-ZB4 = 190.44
-ZB5 = 1.9044000000000003
-
 # -- Impedância de Falta em PU --
 Zf = np.zeros(8)
 # Para Letra A, usa-se a ZB2
-Zf[4] = ZfA/ZB2
+Zf[4] = ZfA/ZBase2
 # Para Letra B, usa-se a ZB4 TODO: CONFIRMAR CARALHO!
-Zf[5] = ZfB/ZB4
+Zf[5] = ZfB/ZBase4
 # Para Letra C, usa-se a ZB2
-Zf[2] = ZfC/ZB2
+Zf[2] = ZfC/ZBase2
 
 
 #region Matriz de transformação modal A = 1 1 1; 1 a**2 a; 1 a a**2
@@ -111,8 +91,11 @@ A[indices] = 1
 A[indices2] = a
 A[indices3] = a**2
 A = A.reshape(3,3)
-A_df = pd.DataFrame(A)
-print(A_df)
+#A_df = pd.DataFrame(A)
+#print(A_df)
+#A_inv = np.linalg.inv(A)
+#Ainv_df = pd.DataFrame(A_inv)
+#print(Ainv_df)
 #endregion
 
 # Potencia 
@@ -355,7 +338,9 @@ Vdefasagem_oposto[9] = defasagem0Grau
 
 
 # barraOndeOcorreuAFalta = [4, 5, 2]
-barraOndeOcorreuAFalta = [4]
+faltaBarra4 = [4]
+faltaBarra5 = [5]
+faltaBarra2 = [2]
 
 
 tensoesDeFaseABC = []
@@ -370,11 +355,11 @@ Ic_neg = np.zeros(10, dtype=complex)
 Ic_0 = np.zeros(10, dtype=complex)
 
 # Matriz para guardar as correntes circunvizinhas de fase A, B e C
-Ivetpf = np.zeros(30, dtype=tuple)
+Ivetpf = np.zeros(30, dtype=tuple)  # Coloquei como tuple para guardar os dados já convertidos em polar
 Ivetpf = Ivetpf.reshape(3,10)
 
 # Calcular as tensoes de pós-falta em sequencia +, - e 0 em TODAS as barras
-for k in barraOndeOcorreuAFalta:
+for k in faltaBarra4:
     # Colocando em termos do Anafas
     # Quando for falta na barra 5, a defasagem é de 0 em relaçã o a barra 5 (da 1 pra 5)
     # Quando for na barra 4, 30 graus positivos
@@ -383,6 +368,8 @@ for k in barraOndeOcorreuAFalta:
 
     If[k] = (VpreF[k])*defasagem30GrausPos / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1] + 3*Zf[k])
     If_3[k] = (3*VpreF[k])*defasagem30GrausPos / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + ZBarra_0[k-1,k-1] + 3*Zf[k])
+
+    # TODO: Calcular corrente de falta por FASE (A,B e C)
 
     print(f'Corrente de Falta na barra {k}: {ret2pol(If[k])}')
     # 9 Barras
@@ -433,14 +420,187 @@ for k in barraOndeOcorreuAFalta:
     matTensaoPosFaltaABC = pd.DataFrame(Vetf)
     print(matCorrenteCircunvizinhasABC)
 
-    #Ic_45_pos = (-Vpos_positiva[4] + Vpos_positiva[5])/ZBarra_positivo[3,4]
-    #Ic_45_neg = (Vpos_neg[4] - Vpos_neg[5])/ZBarra_neg[3,4]
-    #Ic_45_0 = (Vpos_0[4] - Vpos_0[5])/ZBarra_0[3,4]
 
-    #print("BORA FAMIGLIA")
-    #print(f'{ret2pol(Ic_45_pos)}')
-    #print(f'{ret2pol(Ic_45_neg)}')
-    #print(f'{ret2pol(Ic_45_0)}')
+
+
+
+# ------------ Letra b, Falta Bifásica ------------------
+
+Vdefasagem_b = np.zeros(10, dtype=complex)
+Vdefasagem_b[1] = defasagem0Grau
+Vdefasagem_b[2] = defasagem30GrausPos
+Vdefasagem_b[3] = defasagem0Grau
+Vdefasagem_b[4] = defasagem30GrausPos
+Vdefasagem_b[5] = defasagem0Grau
+Vdefasagem_b[6] = defasagem0Grau
+Vdefasagem_b[7] = defasagem90GrausNeg
+Vdefasagem_b[8] = defasagem30GrausPos
+Vdefasagem_b[9] = defasagem30GrausPos
+
+
+Vdefasagem_b_oposto = np.zeros(10, dtype=complex)
+Vdefasagem_b_oposto[1] = defasagem0Grau
+Vdefasagem_b_oposto[2] = defasagem30GrausNeg
+Vdefasagem_b_oposto[3] = defasagem0Grau
+Vdefasagem_b_oposto[4] = defasagem30GrausNeg
+Vdefasagem_b_oposto[5] = defasagem0Grau
+Vdefasagem_b_oposto[6] = defasagem0Grau
+Vdefasagem_b_oposto[7] = defasagem90GrausPos
+Vdefasagem_b_oposto[8] = defasagem30GrausNeg
+Vdefasagem_b_oposto[9] = defasagem30GrausNeg
+
+# Matriz para guardar as correntes de falta de fase A, B e C
+If_ph = np.zeros(3, dtype=tuple)
+#If_ph = If_ph.reshape(3,1)
+
+# Letra b, falta bifásica na barra 5
+for k in faltaBarra5:
+    print(f'\n\n\n------------ Falta na Barra {k} ------------')
+    
+    # Quando a falta é bifasica, a corrente de falta de seq é 0
+    If_positivo = (VpreF[k]) / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + Zf[k])
+    # IMPORTANTE: deixamos igual ao If_positivo pois somente assim os ângulos dos dois serão iguais!
+    If_neg = -(VpreF[k]) / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + Zf[k])
+    If_0 = 0 + 0j
+    # Corrente de falta de sequencia
+    IfSeq = np.array([[If_0, If_positivo, If_neg]])
+    IfSeq = IfSeq.transpose()
+
+    # Corrente de falta por fase (A, B e C)
+    # TODO: FIZEMOS O CALCULO NA MAO E POR ALGUMA RAZAO NP.DOT, @ UO MATMUL NAO ESTÃO RETORNANDO OS VALORES
+    # TODO CORRETOS, JÁ VERIFICAMOS NA MÃO. POR ENQUNATO IGNORAMOS ESTE RESULTADO
+    # TODO: DEIXAMOS NO FINAL COM O MENOS NA FRENTE DO If_neg, JÁ QUE NÃO É POSSÍVEL DEIXAR UM MÓDULO DE UM NUMERO
+    # TODO: DE FORMA NEGATIVA, COLOCANDO O SINAL, OS VALORES BATERAM, MAS A ORDEM DE If_ph ESTÁ ERRADA
+    Ifph = A @ IfSeq
+    #Ifph = np.dot(A,IfSeq)
+    #Ifph = np.matmul(A,IfSeq)
+
+    for g in range(0,3):
+        If_ph[g] = ret2pol(Ifph[g])
+    # forçamos o resultado da fase que "sobrou" da falta para ser 0, por isso os resultados são iguais da B e C.
+    If_ph[0] = 0
+
+    for n in range(1,10):
+        # Não tem defasagem neste pois é em relação a barra 5, a mesma coisa.
+        Vpos_positiva[n] = (VpreF[n] - ZBarra_positivo[n-1,k-1]*If_positivo)*Vdefasagem_b[n]
+        Vpos_neg[n] = -(ZBarra_neg[n-1,k-1]*If_neg)*Vdefasagem_b_oposto[n]
+        Vpos_0[n] = -ZBarra_0[n-1,k-1]*If_0
+
+        print(f"\n\n---- Tensão pós falta na barra {n} ----")
+        print(f'Tensão Pos Falta Positiva: {ret2pol(Vpos_positiva[n])}')
+        print(f'Tensão Pos Falta Negativa: {ret2pol(Vpos_neg[n])}')
+        print(f'Tensão Pos Falta Zero: {ret2pol(Vpos_0[n])}')
+
+        # Guardando valores para dar output nas tensoes de barra de fase A, B e C
+        vetSeq = np.array([[Vpos_0[n], Vpos_positiva[n], Vpos_neg[n]]])
+        vetSeq = vetSeq.transpose()
+
+        # Vph: tensões nas fases A, B e C
+        Vph = np.dot(A,vetSeq)
+        # Loop auxiliar para guardar os valores de forma correta na matriz das tensões de fase A, B e C
+        for m in range(0,3):
+            Vetf[m,n] = ret2pol(Vph[m])
+        
+
+    for h in [4,6]:
+
+        # Oposto aqui pois precisamos desfazer a defasagem que demos inicialmente
+        Ic_positivo[h] = (Vpos_positiva[h]*Vdefasagem_b_oposto[h] - Vpos_positiva[k])*(-YBarra_positivo[h-1,k-1])
+        Ic_neg[h] = (Vpos_neg[h]*Vdefasagem_b[h]-Vpos_neg[k])*(-YBarra_neg[h-1,k-1])
+        Ic_0[h] = (Vpos_0[h]-Vpos_0[k])*(-YBarra_0_mod[h-1,k-1])
+        
+        print(f'\nCorrente Circunvizinha Positiva: {k}-{h}:\n{ret2pol(Ic_positivo[h])}')
+        print(f'\nCorrente Circunvizinha Negativa: {k}-{h}:\n{ret2pol(Ic_neg[h])}')
+        print(f'\nCorrente Circunvizinha 0: {k}-{h}:\n{ret2pol(Ic_0[h])}')
+        ISeq = np.array([[Ic_0[h], Ic_positivo[h], Ic_neg[h]]])
+        ISeq = ISeq.transpose()
+        Iph = np.dot(A,ISeq)
+        # Loop auxiliar para guardar os valores de forma correta na matriz das correntes circunvizinhas de fase A, B e C
+        for g in range(0,3):
+            Ivetpf[g,h] = ret2pol(Iph[g])
+    
+    matCorrenteCircunvizinhasABC = pd.DataFrame(Ivetpf)
+    matTensaoPosFaltaABC = pd.DataFrame(Vetf)
+    #matTensaoPosFaltaABC.to_csv(r'.csv', index=False)
+    matCorrenteCircunvizinhasABC.to_csv(r'CorrentesCircunvizinhas.csv', index=False)
+#print(f"Correntes de falta por fase: A, B e C: {If_ph}")
+#print(f'Corrente positiva de Falta na barra {k}: {ret2pol(If_positivo)}')
+# Justamente pelo fato do Anafas mostrar o If_negativo com módulo negativo, "forçamos" o resultado ser negativo
+#print(f'Corrente negativa de Falta na barra {k}: -{ret2pol(If_neg)}')
+#print(f'Corrente zero de Falta na barra {k}: {ret2pol(0+0j)}')
+
+
+# -------- Letra C, Falta na Barra 2 ---------
+
+# Vetor que contém as defasagens para as tensões de pós-falta, colocando as barras em relação a barra de falta, neste caso, barra 2.
+# APROVEITAMOS O Vdefasagem da primeira questão pois não há nenhum trafo a mais, igual a barra 4, em referência a barra 1, portanto segue a mesma regra
+
+
+for k in faltaBarra2:
+    print(f'\n\n\n------------ Falta na Barra {k} ------------')
+    
+    # Quando a falta é bifasica, a corrente de falta de seq é 0
+    If_positivo = (VpreF[k]) / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + Zf[k])
+    # IMPORTANTE: deixamos igual ao If_positivo pois somente assim os ângulos dos dois serão iguais!
+    If_neg = -(VpreF[k]) / (ZBarra_positivo[k-1,k-1] + ZBarra_neg[k-1,k-1] + Zf[k])
+    If_0 = 0 + 0j
+    # Corrente de falta de sequencia
+    IfSeq = np.array([[If_0, If_positivo, If_neg]])
+    IfSeq = IfSeq.transpose()
+
+    # Corrente de falta por fase (A, B e C)
+    Ifph = A @ IfSeq
+    #Ifph = np.dot(A,IfSeq)
+    #Ifph = np.matmul(A,IfSeq)
+
+    for g in range(0,3):
+        If_ph[g] = ret2pol(Ifph[g])
+    # forçamos o resultado da fase que "sobrou" da falta para ser 0, por isso os resultados são iguais da B e C.
+    If_ph[0] = 0
+
+    for n in range(1,10):
+        # Não tem defasagem neste pois é em relação a barra 5, a mesma coisa.
+        Vpos_positiva[n] = (VpreF[n] - ZBarra_positivo[n-1,k-1]*If_positivo)*Vdefasagem_b[n]
+        Vpos_neg[n] = -(ZBarra_neg[n-1,k-1]*If_neg)*Vdefasagem_b_oposto[n]
+        Vpos_0[n] = -ZBarra_0[n-1,k-1]*If_0
+
+        print(f"\n\n---- Tensão pós falta na barra {n} ----")
+        print(f'Tensão Pos Falta Positiva: {ret2pol(Vpos_positiva[n])}')
+        print(f'Tensão Pos Falta Negativa: {ret2pol(Vpos_neg[n])}')
+        print(f'Tensão Pos Falta Zero: {ret2pol(Vpos_0[n])}')
+
+        # Guardando valores para dar output nas tensoes de barra de fase A, B e C
+        vetSeq = np.array([[Vpos_0[n], Vpos_positiva[n], Vpos_neg[n]]])
+        vetSeq = vetSeq.transpose()
+
+        # Vph: tensões nas fases A, B e C
+        Vph = np.dot(A,vetSeq)
+        # Loop auxiliar para guardar os valores de forma correta na matriz das tensões de fase A, B e C
+        for m in range(0,3):
+            Vetf[m,n] = ret2pol(Vph[m])
+        
+
+    for h in [4,6]:
+
+        # Oposto aqui pois precisamos desfazer a defasagem que demos inicialmente
+        Ic_positivo[h] = (Vpos_positiva[h]*Vdefasagem_b_oposto[h] - Vpos_positiva[k])*(-YBarra_positivo[h-1,k-1])
+        Ic_neg[h] = (Vpos_neg[h]*Vdefasagem_b[h]-Vpos_neg[k])*(-YBarra_neg[h-1,k-1])
+        Ic_0[h] = (Vpos_0[h]-Vpos_0[k])*(-YBarra_0_mod[h-1,k-1])
+        
+        print(f'\nCorrente Circunvizinha Positiva: {k}-{h}:\n{ret2pol(Ic_positivo[h])}')
+        print(f'\nCorrente Circunvizinha Negativa: {k}-{h}:\n{ret2pol(Ic_neg[h])}')
+        print(f'\nCorrente Circunvizinha 0: {k}-{h}:\n{ret2pol(Ic_0[h])}')
+        ISeq = np.array([[Ic_0[h], Ic_positivo[h], Ic_neg[h]]])
+        ISeq = ISeq.transpose()
+        Iph = np.dot(A,ISeq)
+        # Loop auxiliar para guardar os valores de forma correta na matriz das correntes circunvizinhas de fase A, B e C
+        for g in range(0,3):
+            Ivetpf[g,h] = ret2pol(Iph[g])
+    
+    matCorrenteCircunvizinhasABC = pd.DataFrame(Ivetpf)
+    matTensaoPosFaltaABC = pd.DataFrame(Vetf)
+    #matTensaoPosFaltaABC.to_csv(r'.csv', index=False)
+    matCorrenteCircunvizinhasABC.to_csv(r'CorrentesCircunvizinhas.csv', index=False)
 
 
 
